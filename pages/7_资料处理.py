@@ -29,7 +29,7 @@ with tab_signin:
     start_time = next(a[2] for a in acts if a[0] == aid)
     up = st.file_uploader("上传签到表图片", type=["jpg", "jpeg", "png"])
     if up is not None:
-        img_path = Path("data/app") / ("signin_" + up.name)
+        img_path = Path("outputs/uploads") / ("signin_" + up.name)
         img_path.parent.mkdir(parents=True, exist_ok=True)
         img_path.write_bytes(up.getvalue())
         if "signin_rows" not in st.session_state or st.button("重新识别"):
@@ -86,12 +86,12 @@ with tab_audio:
     st.caption("接口限制：单次 ≤120 秒、16 位 PCM WAV、≤8MiB。长录音自动切分。")
     up2 = st.file_uploader("上传会议录音（WAV）", type=["wav"])
     if up2 is not None:
-        wav_path = Path("data/app") / ("meeting_" + up2.name)
+        wav_path = Path("outputs/uploads") / ("meeting_" + up2.name)
         wav_path.parent.mkdir(parents=True, exist_ok=True)
         wav_path.write_bytes(up2.getvalue())
         if st.button("切分并转写") and is_configured():
             try:
-                parts = split_wav(str(wav_path), "data/app/asr_parts")
+                parts = split_wav(str(wav_path), "outputs/uploads/asr_parts")
                 key = os.getenv("DEEPSEEK_API_KEY")
                 texts = []
                 for i, part in enumerate(parts):

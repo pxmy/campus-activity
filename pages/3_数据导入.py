@@ -20,7 +20,7 @@ with tab_import:
     st.caption("原始数据只读不改；干净数据入库，问题数据进异常清单，一条不丢。")
     up = st.file_uploader("选择 CSV / Excel 文件", type=["csv", "xlsx"])
     if up is not None:
-        tmp = Path("data/app") / ("upload_" + up.name)
+        tmp = Path("outputs/uploads") / ("upload_" + up.name)
         tmp.parent.mkdir(parents=True, exist_ok=True)
         tmp.write_bytes(up.getvalue())
         conn = get_conn()
