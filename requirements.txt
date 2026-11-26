@@ -1,0 +1,10 @@
+streamlit
+pandas
+openpyxl
+python-docx
+scikit-learn
+jieba
+openai
+python-dotenv
+requests
+pytest

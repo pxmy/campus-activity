@@ -1,0 +1,31 @@
+# 密钥（绝对不能入库）
+.env
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# 数据库（演示数据不入库，由 init_db.py 生成）
+data/app.db
+data/app.db-journal
+*.db
+
+# 程序产出与日志
+outputs/
+logs/
+
+# Streamlit 运行时
+.streamlit/secrets.toml
+
+# 编辑器与系统文件
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
