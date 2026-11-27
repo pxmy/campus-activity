@@ -104,3 +104,39 @@ def test_zero_denominator_returns_none():
     a = df[df["activity_id"] == 9].iloc[0]
     assert pd.isna(a["attendance_rate"])  # pandas 把 None 存为 NaN
     assert a["signup_rate"] == 0.0
+
+
+def test_score_distribution_bins_and_ungraded():
+    from services.stats import score_distribution
+    # 甲：95→90-99, 75→70-79, 0→0-9, S04 无成绩→未评定
+    # 乙：90→90-99
+    dist = score_distribution(make_conn(), {}).set_index("分数段")["人数"]
+    assert dist["0-9"] == 1
+    assert dist["70-79"] == 1
+    assert dist["90-99"] == 2
+    assert dist["未评定"] == 1
+    assert dist["100"] == 0
+    assert dist.sum() == 5
+
+
+def test_score_distribution_follows_filters():
+    from services.stats import score_distribution
+    c = make_conn()
+    # 只留甲活动：成绩分布不应再包含乙的 90 分
+    d = score_distribution(c, {"date_to": "2026-10-01T23:59:59"}).set_index("分数段")["人数"]
+    assert d["90-99"] == 1
+    assert d.sum() == 4
+    # 学院筛选：只统计计算机学院 S01/S03/S04，乙活动的 S01 同样计入
+    d2 = score_distribution(c, {"college": "计算机学院"}).set_index("分数段")["人数"]
+    assert d2["90-99"] == 2      # 甲的 95 与乙的 90
+    assert d2["70-79"] == 0      # S02 管理学院被排除
+    assert d2.sum() == 4         # 95 / 0 / 未评定 / 90
+
+
+def test_display_frame_matches_page_and_export():
+    from services.stats import display_frame
+    df = activity_metrics(make_conn(), {})
+    show = display_frame(df)
+    assert "报名率" in show.columns and "活动名称" in show.columns
+    assert show[show["活动名称"] == "甲"]["报名率"].iloc[0] == "40.0%"
+    assert show[show["活动名称"] == "甲"]["完成率"].iloc[0] == "66.7%"

@@ -91,6 +91,70 @@ def summary(df):
     }
 
 
+def score_distribution(conn, filters):
+    """按筛选条件返回实践成绩分布，每 10 分一档，另有 100 分档与“未评定”档。
+
+    与指标口径保持一致：只统计有效报名、排除取消/草稿活动，学院筛选只计该学院学生。
+    返回 DataFrame 两列：分数段、人数；档位顺序固定，空档也保留（人数为 0）。
+    """
+    sql = (
+        "SELECT r.practice_score AS score FROM registrations r "
+        "JOIN activities a ON r.activity_id=a.activity_id "
+        "WHERE r.status='registered' AND a.status NOT IN ('cancelled','draft') "
+    )
+    args = []
+    if filters.get("date_from"):
+        sql += " AND a.start_time >= ?"; args.append(filters["date_from"])
+    if filters.get("date_to"):
+        sql += " AND a.start_time <= ?"; args.append(filters["date_to"])
+    if filters.get("category"):
+        sql += " AND a.category = ?"; args.append(filters["category"])
+    if filters.get("organizer_id") is not None:
+        sql += " AND a.organizer_id = ?"; args.append(filters["organizer_id"])
+    if filters.get("college"):
+        sql += " AND r.student_id IN (SELECT student_id FROM students WHERE college=?)"
+        args.append(filters["college"])
+
+    labels = ["%d-%d" % (lo, lo + 9) for lo in range(0, 100, 10)] + ["100", "未评定"]
+    counts = {label: 0 for label in labels}
+    for row in conn.execute(sql, args).fetchall():
+        s = row["score"]
+        if s is None:
+            counts["未评定"] += 1
+        elif s >= 100:
+            counts["100"] += 1
+        else:
+            counts["%d-%d" % (s // 10 * 10, s // 10 * 10 + 9)] += 1
+    return pd.DataFrame([{"分数段": label, "人数": counts[label]} for label in labels])
+
+
+def filter_options(conn):
+    """返回看板筛选项的可选值：活动类别列表与学院列表。"""
+    categories = [r[0] for r in conn.execute(
+        "SELECT DISTINCT category FROM activities WHERE category IS NOT NULL ORDER BY category").fetchall()]
+    colleges = [r[0] for r in conn.execute(
+        "SELECT DISTINCT college FROM students WHERE college IS NOT NULL ORDER BY college").fetchall()]
+    return {"categories": categories, "colleges": colleges}
+
+
+def display_frame(df):
+    """把指标表转成页面展示用的中文表：比率显示为一位小数百分比，分母为 0 显示“—”。
+
+    页面明细表与导出文件都调用本函数，保证两处数值完全一致。
+    """
+    show = df[["title", "capacity", "signed", "arrived", "completed", "ungraded",
+               "signup_rate", "attendance_rate", "completion_rate", "avg_score"]].copy()
+    for col in ["signup_rate", "attendance_rate", "completion_rate"]:
+        show[col] = show[col].apply(lambda v: "—" if pd.isna(v) else "%.1f%%" % (v * 100))
+    show["avg_score"] = show["avg_score"].apply(
+        lambda v: "—" if pd.isna(v) else round(v, 1))
+    return show.rename(columns={
+        "title": "活动名称", "capacity": "名额", "signed": "有效报名", "arrived": "到场",
+        "completed": "完成", "ungraded": "未评定", "signup_rate": "报名率",
+        "attendance_rate": "到场率", "completion_rate": "完成率",
+        "avg_score": "平均实践成绩"})
+
+
 def export_frame(df, path):
     """导出 DataFrame：CSV 用带 BOM 的 UTF-8（Excel 打开中文正常），Excel 用 openpyxl。"""
     path = str(path)
