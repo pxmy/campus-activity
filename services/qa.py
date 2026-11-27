@@ -59,18 +59,21 @@ def _split_text(text):
     """
     blocks = [b.strip() for b in re.split(r"\n\s*\n", text) if b.strip()]
     merged = []
-    pending_titles = []
-    for b in blocks:
-        if re.match(r"^#{1,6}\s", b):
-            pending_titles.append(b)
-            continue
-        if pending_titles:
-            b = "\n".join(pending_titles) + "\n" + b
-            pending_titles = []
-        merged.append(b)
-    # 文末若有悬空标题（其下无正文），并入最后一个片段，避免章节信息丢失
-    if pending_titles and merged:
-        merged[-1] = "\n".join(pending_titles) + "\n" + merged[-1]
+    i = 0
+    while i < len(blocks):
+        titles = []
+        while i < len(blocks) and re.match(r"^#{1,6}\s", blocks[i]):
+            titles.append(blocks[i])
+            i += 1
+        body = []
+        while i < len(blocks) and not re.match(r"^#{1,6}\s", blocks[i]):
+            body.append(blocks[i])
+            i += 1
+        if titles:
+            # 标题组 + 其后全部正文（引导句与列表项之间常有空行，必须一起保留）
+            merged.append("\n".join(titles + body))
+        else:
+            merged.extend(body)
     chunks = []
     for b in merged:
         if len(b) <= 400:
@@ -129,10 +132,18 @@ def answer(question, index, chunks, llm_chat_text=None,
            min_score=MIN_SCORE, min_coverage=MIN_COVERAGE):
     """带来源问答。相似度或覆盖率低于门槛直接拒答，不调用模型；校验引用编号。"""
     hits = search(question, index, chunks, k=3)
-    if (not hits or hits[0]["score"] < min_score
-            or hits[0]["coverage"] < min_coverage):
+    # 达标判定看 Top3 任一片段：正确答案可能排在 Top2（如“提前几天预约”
+    # 会先命中名额扩容 FAQ），只看 Top1 会把合法问题误拒。
+    if not hits or not any(h["score"] >= min_score and h["coverage"] >= min_coverage
+                           for h in hits):
         return {"answered": False, "refused_by": "threshold",
                 "text": "现有资料中没有找到相关内容。", "sources": []}
+    # 把首个达标片段提到最前，让模型优先看到真正能回答的内容
+    for i, h in enumerate(hits):
+        if h["score"] >= min_score and h["coverage"] >= min_coverage:
+            if i:
+                hits.insert(0, hits.pop(i))
+            break
     fn = llm_chat_text or chat_text
     labeled = "\n".join("[%d] %s（来源：%s / %s）" % (i + 1, h["text"], h["file"], h["section"])
                         for i, h in enumerate(hits))
