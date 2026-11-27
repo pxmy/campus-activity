@@ -76,11 +76,12 @@ def _split_text(text):
             merged.extend(body)
     chunks = []
     for b in merged:
-        if len(b) <= 400:
+        if len(b) <= 800:
             chunks.append(b)
         else:
-            for i in range(0, len(b), 300):
-                chunks.append(b[i:i + 400])
+            # 窗口 800 保证“五种状态”“五类活动”这类枚举列表不被切断
+            for i in range(0, len(b), 600):
+                chunks.append(b[i:i + 800])
     return chunks
 
 
