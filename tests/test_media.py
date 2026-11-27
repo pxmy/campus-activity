@@ -72,18 +72,44 @@ def test_check_rows_statuses(conn):
         {"seq": 2, "student_id": "2024010102", "name": "张三", "sign_time": "14:02"},  # 姓名不符
         {"seq": 3, "student_id": "9999999999", "name": "某人", "sign_time": "14:03"},  # 不存在
         {"seq": 4, "student_id": "2024010104", "name": "丁", "sign_time": "14:04"},    # 未报名
-        {"seq": 5, "student_id": "", "name": "", "sign_time": ""},                     # 空值
+        {"seq": 5, "student_id": "", "name": "", "sign_time": "", "signed": ""},       # 空白行，须剔除
         {"seq": 6, "student_id": "2024010101", "name": "甲", "sign_time": "14:05"},    # 重复
     ]
     out = media.check_rows(conn, 1, rows)
     byseq = {r["seq"]: r["status"] for r in out}
+    assert 5 not in byseq                    # 只有序号的空白行不当成“空学号”
     assert byseq[1] == "正常"
     assert byseq[2] == "姓名不符"
     assert byseq[3] == "学号不存在"
     assert byseq[4] == "未报名该活动"
-    assert byseq[5] == "学号不存在"
     assert byseq[6] == "同一学号重复出现"  # 重复优先
     assert out[0]["status"] != "正常"       # 异常行排前面
+
+
+def test_check_rows_drops_blank_rows_before_expected_check(conn):
+    """签到表底部预留空白行须剔除；expected 校验按剔除前行数，不能误报相差过大。"""
+    rows = [
+        {"seq": 1, "student_id": "2024010101", "name": "甲", "sign_time": "14:01"},
+        {"seq": 10, "student_id": "", "name": "", "sign_time": "", "signed": ""},
+        {"seq": 11, "student_id": "", "name": "", "sign_time": "", "signed": ""},
+        {"seq": 12, "student_id": "", "name": "", "sign_time": "", "signed": ""},
+    ]
+    out = media.check_rows(conn, 1, rows, expected_count=4)
+    assert [r["seq"] for r in out] == [1]
+
+
+def test_check_rows_keeps_empty_id_when_name_present(conn):
+    """学号空但姓名非空是漏填，不是空白行，应保留供人工补录。"""
+    out = media.check_rows(conn, 1, [
+        {"seq": 1, "student_id": "", "name": "甲", "sign_time": "14:01"}])
+    assert len(out) == 1 and out[0]["status"] == "学号不存在"
+
+
+def test_check_rows_all_blank_raises(conn):
+    rows = [{"seq": 10, "student_id": "", "name": ""},
+            {"seq": 11, "student_id": "", "name": ""}]
+    with pytest.raises(ValueError, match="没有有效的签到数据行"):
+        media.check_rows(conn, 1, rows)
 
 
 def test_check_rows_rejects_too_few_rows(conn):

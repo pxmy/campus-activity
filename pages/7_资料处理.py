@@ -55,12 +55,14 @@ with tab_signin:
                     data = stub_image(str(img_path))
                 else:
                     data = extract_signin(str(img_path))
+                raw_rows = data.get("rows", [])
                 conn = get_conn()
                 try:
-                    rows = check_rows(conn, aid, data.get("rows", []),
+                    rows = check_rows(conn, aid, raw_rows,
                                       expected_count=data.get("expected_rows"))
                 finally:
                     conn.close()
+                st.session_state["signin_dropped"] = len(raw_rows) - len(rows)
                 # 原始识别值快照：按 seq 保存，用于修正记录比对
                 st.session_state["signin_raw"] = {
                     r.get("seq"): dict(r) for r in rows}
@@ -75,6 +77,9 @@ with tab_signin:
             st.image(st.session_state["signin_img"], use_container_width=True)
         with col2:
             rows = st.session_state["signin_rows"]
+            dropped = st.session_state.get("signin_dropped", 0)
+            if dropped:
+                st.caption("已自动剔除 %d 行预留空白行（只有序号、无学号姓名），不参与核对与入库。" % dropped)
             errs = extract_field_errors(rows)
             if errs:
                 st.warning("有问题的行 %d 行：%s" %
@@ -103,7 +108,8 @@ with tab_signin:
                 else:
                     wconn = get_conn_manual()
                     try:
-                        result = apply_signin(wconn, aid, df, raw_rows, start,
+                        # 写入经 check_rows 整理后的行：空白行已剔除，避免空学号入库
+                        result = apply_signin(wconn, aid, rechecked, raw_rows, start,
                                               user["username"])
                         wconn.commit()
                     finally:
