@@ -1,5 +1,6 @@
 """反馈分析：主题分类与摘要。模型输出必须经校验，不可信文本与指令分开。"""
 import json
+import re
 
 from services.llm import chat_json, chat_text
 
@@ -35,12 +36,19 @@ def classify_one(content, llm_chat_json=None):
     return {"topics": topics, "sentiment": sentiment}
 
 
-def batch_classify(conn, activity_id, llm_chat_json=None):
-    """批量分类某活动全部反馈；已分类的不重复调用；失败的记录为“分类失败”。"""
-    rows = conn.execute(
-        "SELECT f.feedback_id, f.content FROM feedback f WHERE f.activity_id=? "
-        "AND f.feedback_id NOT IN (SELECT feedback_id FROM feedback_topics) "
-        "ORDER BY f.feedback_id", (activity_id,)).fetchall()
+def batch_classify(conn, activity_id, llm_chat_json=None, limit=None):
+    """批量分类某活动反馈；已分类的不重复调用；失败的记录为“分类失败”。
+
+    limit 用于试运行（如先跑 10 条人工核对）；为 None 时处理全部。
+    """
+    sql = ("SELECT f.feedback_id, f.content FROM feedback f WHERE f.activity_id=? "
+           "AND f.feedback_id NOT IN (SELECT feedback_id FROM feedback_topics) "
+           "ORDER BY f.feedback_id")
+    params = [activity_id]
+    if limit is not None:
+        sql += " LIMIT ?"
+        params.append(int(limit))
+    rows = conn.execute(sql, params).fetchall()
     results, failed = [], []
     for r in rows:
         try:
@@ -64,6 +72,49 @@ def topic_distribution(conn, activity_id):
         "JOIN feedback f ON ft.feedback_id=f.feedback_id "
         "WHERE f.activity_id=? GROUP BY topic", (activity_id,)).fetchall()
     return {r["topic"]: r["n"] for r in rows}
+
+
+def representative_feedback(conn, activity_id, per_topic=2):
+    """每个主题下选取代表性反馈（按评分偏离度排序，兼顾正负两极）。
+
+    返回 {主题: [{"content":..., "rating":..., "sentiment":...}, ...]}。
+    """
+    rows = conn.execute(
+        "SELECT f.content, f.rating, ft.topic, ft.sentiment FROM feedback_topics ft "
+        "JOIN feedback f ON ft.feedback_id=f.feedback_id "
+        "WHERE f.activity_id=? ORDER BY ft.topic, ABS(f.rating-3) DESC, f.feedback_id",
+        (activity_id,)).fetchall()
+    out = {}
+    for r in rows:
+        lst = out.setdefault(r["topic"], [])
+        if len(lst) < per_topic:
+            lst.append({"content": r["content"], "rating": r["rating"],
+                        "sentiment": r["sentiment"]})
+    return out
+
+
+def classify_failure_count(conn, activity_id):
+    """某活动未成功分类的反馈条数（已在 feedback_topics 中出现的视为成功）。"""
+    return conn.execute(
+        "SELECT COUNT(*) FROM feedback f WHERE f.activity_id=? "
+        "AND f.feedback_id NOT IN (SELECT feedback_id FROM feedback_topics)",
+        (activity_id,)).fetchone()[0]
+
+
+def feedback_activities(conn):
+    """有反馈的活动列表：[(activity_id, title), ...]，供页面下拉选择。"""
+    return [(r["activity_id"], r["title"]) for r in conn.execute(
+        "SELECT DISTINCT a.activity_id, a.title FROM activities a "
+        "JOIN feedback f ON f.activity_id=a.activity_id "
+        "ORDER BY a.activity_id").fetchall()]
+
+
+def raw_feedback(conn, activity_id, limit=20):
+    """活动反馈原文（少于5条时使用），按时间倒序。"""
+    return [dict(r) for r in conn.execute(
+        "SELECT f.rating, f.content, f.created_at FROM feedback f "
+        "WHERE f.activity_id=? ORDER BY f.created_at DESC LIMIT ?",
+        (activity_id, limit)).fetchall()]
 
 
 def summarize(conn, activity_id, llm_chat_text=None):
@@ -90,9 +141,15 @@ def summarize(conn, activity_id, llm_chat_text=None):
     except (TypeError, json.JSONDecodeError) as e:
         raise ValueError("摘要返回不是合法 JSON") from e
     for key in ("main_praise", "main_problems", "suggestions"):
-        if key not in parsed or not isinstance(parsed[key], list) or len(parsed[key]) > 3:
-            raise ValueError("摘要缺少 %s 或超过 3 条" % key)
+        if key not in parsed or not isinstance(parsed[key], list):
+            raise ValueError("摘要缺少 %s 或格式错误" % key)
+        if len(parsed[key]) > 3:
+            raise ValueError("摘要 %s 超过 3 条" % key)
         for item in parsed[key]:
-            if "依据" not in str(item):
+            m = re.search(r"依据\s*(\d+)\s*条", str(item))
+            if not m:
                 raise ValueError("摘要条目未标注依据数量")
+            # 数量由程序统计后提供给模型，模型不得自行编造超出反馈总数的数字
+            if int(m.group(1)) < 1 or int(m.group(1)) > n:
+                raise ValueError("摘要依据数量超出本场反馈总数")
     return parsed

@@ -65,6 +65,10 @@ CREATE TABLE IF NOT EXISTS feedback (
     created_at  TEXT NOT NULL
 );
 
+-- 同一学生对同一活动同一时刻的反馈只保留一条，保证 init_db 重跑幂等
+CREATE UNIQUE INDEX IF NOT EXISTS uq_feedback
+    ON feedback(activity_id, student_id, created_at);
+
 CREATE TABLE IF NOT EXISTS tool_logs (
     log_id      INTEGER PRIMARY KEY AUTOINCREMENT,
     ts          TEXT NOT NULL,

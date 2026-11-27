@@ -157,10 +157,13 @@ def main():
                 "INSERT OR IGNORE INTO venues (name, capacity) VALUES (?,?)", VENUES)
         seed_users(conn)
         seed_activities(conn)
+        n_fb = load_csv_table(conn, "feedback", "feedback",
+                              ["activity_id", "student_id", "rating", "content", "created_at"],
+                              {"activity_id": int, "rating": int})
         conn.commit()
         print("数据库初始化完成：%s" % DB_PATH)
         print("新增学生记录：%d" % n_stu)
-        for t in ("students", "venues", "users", "activities"):
+        for t in ("students", "venues", "users", "activities", "feedback"):
             print("  %-10s %d 行" % (t, conn.execute(
                 "SELECT COUNT(*) FROM %s" % t).fetchone()[0]))
     finally:
