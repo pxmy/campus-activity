@@ -1,0 +1,553 @@
+{
+  "description": "单元9 独立评测集：5张模拟签到表图像及逐行标准答案（共45行）",
+  "seed": 20261107,
+  "total_images": 5,
+  "total_rows": 45,
+  "sheets": [
+    {
+      "activity_id": 2,
+      "activity_title": "秋季校园数据建模挑战赛",
+      "activity_date": "2026-09-16",
+      "activity_time": "13:30—17:30",
+      "venue": "大学生活动中心",
+      "rows": [
+        {
+          "seq": 1,
+          "student_id": "2024010212",
+          "name": "袁若然",
+          "signin_time": "13:34",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 2,
+          "student_id": "2026010102",
+          "name": "曾启瑜",
+          "signin_time": "13:18",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 3,
+          "student_id": "2026050210",
+          "name": "于凯",
+          "signin_time": "13:43",
+          "has_signature": true,
+          "is_late_expected": true,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": "迟到(超过开始时间10分钟，应由程序判定迟到)"
+        },
+        {
+          "seq": 4,
+          "student_id": "2023030209",
+          "name": "薛书昊",
+          "signin_time": "13:34",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 5,
+          "student_id": "2026040297",
+          "name": "于诗颖",
+          "signin_time": "13:30",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "学号不存在",
+          "notes": "手写学号末两位写错(实际报名学生为2026040209)"
+        },
+        {
+          "seq": 6,
+          "student_id": "2026030209",
+          "name": "刘瑞轩",
+          "signin_time": "13:36",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 7,
+          "student_id": "2024020209",
+          "name": "薛亦航",
+          "signin_time": "13:23",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "messy",
+          "expected_db_status": "正常",
+          "notes": "字迹潦草，需人工对照原图核对"
+        },
+        {
+          "seq": 8,
+          "student_id": "2025030215",
+          "name": "薛锦欣",
+          "signin_time": "13:34",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 9,
+          "student_id": "2025030214",
+          "name": "程雨哲",
+          "signin_time": "13:28",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        }
+      ],
+      "image_file": "data/eval/eval_signin_01.jpg"
+    },
+    {
+      "activity_id": 6,
+      "activity_title": "金融科技与量化思维公开课",
+      "activity_date": "2026-09-28",
+      "activity_time": "19:00—21:00",
+      "venue": "学术报告厅",
+      "rows": [
+        {
+          "seq": 1,
+          "student_id": "2026020214",
+          "name": "邓宇涵",
+          "signin_time": "18:57",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 2,
+          "student_id": "2025030211",
+          "name": "蒋晨凡",
+          "signin_time": "19:13",
+          "has_signature": true,
+          "is_late_expected": true,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": "迟到(超过开始时间10分钟，应由程序判定迟到)"
+        },
+        {
+          "seq": 3,
+          "student_id": "2023020106",
+          "name": "周景恒",
+          "signin_time": "18:56",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 4,
+          "student_id": "2026020210",
+          "name": "蔡锦欣",
+          "signin_time": "18:52",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "学号存在但姓名不符",
+          "notes": "学号对应学生实为韩峰，表格姓名填写有误"
+        },
+        {
+          "seq": 5,
+          "student_id": "2023020215",
+          "name": "冯一泽",
+          "signin_time": "18:58",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 6,
+          "student_id": "2023030213",
+          "name": "曾书航",
+          "signin_time": "18:56",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "messy",
+          "expected_db_status": "正常",
+          "notes": "字迹潦草，需人工对照原图核对"
+        },
+        {
+          "seq": 7,
+          "student_id": "2023050212",
+          "name": "孙宇然",
+          "signin_time": "18:48",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 8,
+          "student_id": "2026010104",
+          "name": "贾浩宁",
+          "signin_time": "19:04",
+          "has_signature": false,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": "未手写签名"
+        },
+        {
+          "seq": 9,
+          "student_id": "2025050215",
+          "name": "高俊",
+          "signin_time": "19:03",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        }
+      ],
+      "image_file": "data/eval/eval_signin_02.jpg"
+    },
+    {
+      "activity_id": 10,
+      "activity_title": "企业数字化转型实地调研实践",
+      "activity_date": "2026-10-18",
+      "activity_time": "13:30—16:30",
+      "venue": "教学楼A201",
+      "rows": [
+        {
+          "seq": 1,
+          "student_id": "2024050212",
+          "name": "赵瑞铭",
+          "signin_time": "13:28",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 2,
+          "student_id": "2026020108",
+          "name": "郭云涵",
+          "signin_time": "13:28",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 3,
+          "student_id": "2025050101",
+          "name": "贾若辰",
+          "signin_time": "13:28",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "未报名该活动",
+          "notes": "学生在学生表中存在，但未报名本场活动"
+        },
+        {
+          "seq": 4,
+          "student_id": "2025040108",
+          "name": "陈安阳",
+          "signin_time": "13:24",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 5,
+          "student_id": "2025030213",
+          "name": "薛锦航",
+          "signin_time": "13:48",
+          "has_signature": true,
+          "is_late_expected": true,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": "迟到(超过开始时间10分钟，应由程序判定迟到)"
+        },
+        {
+          "seq": 6,
+          "student_id": "2025040107",
+          "name": "胡瑞颖",
+          "signin_time": "13:28",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "messy",
+          "expected_db_status": "正常",
+          "notes": "字迹潦草，需人工对照原图核对"
+        },
+        {
+          "seq": 7,
+          "student_id": "2024020104",
+          "name": "罗欣辰",
+          "signin_time": "13:30",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 8,
+          "student_id": "2024040107",
+          "name": "胡轩",
+          "signin_time": "13:21",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 9,
+          "student_id": "2024020210",
+          "name": "李致文",
+          "signin_time": "13:20",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        }
+      ],
+      "image_file": "data/eval/eval_signin_03.jpg"
+    },
+    {
+      "activity_id": 14,
+      "activity_title": "校园十佳歌手复赛及音乐沙龙",
+      "activity_date": "2026-10-30",
+      "activity_time": "19:00—21:30",
+      "venue": "大学生活动中心",
+      "rows": [
+        {
+          "seq": 1,
+          "student_id": "2025040102",
+          "name": "杨宇颖",
+          "signin_time": "18:53",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 2,
+          "student_id": "2025020101",
+          "name": "彭宇琪",
+          "signin_time": "19:02",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 3,
+          "student_id": "2026020107",
+          "name": "胡嘉航",
+          "signin_time": "19:03",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 4,
+          "student_id": "2025040102",
+          "name": "杨宇颖",
+          "signin_time": "19:04",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "同一学号重复出现",
+          "notes": "与前面行学号重复签到"
+        },
+        {
+          "seq": 5,
+          "student_id": "2024040213",
+          "name": "丁雨瑶",
+          "signin_time": "19:15",
+          "has_signature": true,
+          "is_late_expected": true,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": "迟到(超过开始时间10分钟，应由程序判定迟到)"
+        },
+        {
+          "seq": 6,
+          "student_id": "2026030108",
+          "name": "高舒彤",
+          "signin_time": "19:01",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 7,
+          "student_id": "2026010214",
+          "name": "贾俊",
+          "signin_time": "18:59",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "messy",
+          "expected_db_status": "正常",
+          "notes": "字迹潦草，需人工对照原图核对"
+        },
+        {
+          "seq": 8,
+          "student_id": "2024050197",
+          "name": "彭杰",
+          "signin_time": "18:48",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "学号不存在",
+          "notes": "手写学号末两位写错(实际报名学生为2024050107)"
+        },
+        {
+          "seq": 9,
+          "student_id": "2023020211",
+          "name": "许锦博",
+          "signin_time": "18:55",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        }
+      ],
+      "image_file": "data/eval/eval_signin_04.jpg"
+    },
+    {
+      "activity_id": 16,
+      "activity_title": "职业规划与简历门诊专题分享会",
+      "activity_date": "2026-11-05",
+      "activity_time": "19:00—21:00",
+      "venue": "学术报告厅",
+      "rows": [
+        {
+          "seq": 1,
+          "student_id": "2025040108",
+          "name": "陈安阳",
+          "signin_time": "19:00",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 2,
+          "student_id": "2025040106",
+          "name": "周可博",
+          "signin_time": "19:18",
+          "has_signature": true,
+          "is_late_expected": true,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": "迟到(超过开始时间10分钟，应由程序判定迟到)"
+        },
+        {
+          "seq": 3,
+          "student_id": "2023040102",
+          "name": "叶晨昊",
+          "signin_time": "18:51",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 4,
+          "student_id": "2025010209",
+          "name": "徐宇",
+          "signin_time": "19:01",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 5,
+          "student_id": "2026040212",
+          "name": "彭浩",
+          "signin_time": "18:55",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "学号存在但姓名不符",
+          "notes": "学号对应学生实为朱一文，表格姓名填写有误"
+        },
+        {
+          "seq": 6,
+          "student_id": "2024020105",
+          "name": "丁杰",
+          "signin_time": "18:57",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": ""
+        },
+        {
+          "seq": 7,
+          "student_id": "2024040211",
+          "name": "苏明哲",
+          "signin_time": "18:55",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "messy",
+          "expected_db_status": "正常",
+          "notes": "字迹潦草，需人工对照原图核对"
+        },
+        {
+          "seq": 8,
+          "student_id": "2025040213",
+          "name": "罗磊",
+          "signin_time": "18:54",
+          "has_signature": true,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "未报名该活动",
+          "notes": "学生在学生表中存在，但未报名本场活动"
+        },
+        {
+          "seq": 9,
+          "student_id": "2025020214",
+          "name": "卢晨帆",
+          "signin_time": "18:53",
+          "has_signature": false,
+          "is_late_expected": false,
+          "handwriting_quality": "neat",
+          "expected_db_status": "正常",
+          "notes": "未手写签名"
+        }
+      ],
+      "image_file": "data/eval/eval_signin_05.jpg"
+    }
+  ]
+}

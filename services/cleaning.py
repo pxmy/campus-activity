@@ -5,6 +5,7 @@
 """
 import re
 import unicodedata
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -42,7 +43,11 @@ def normalize_datetime(value):
         return None
     y, mo, d, hh, mm = m.groups()
     hh, mm = hh or "00", mm or "00"
-    return "%04d-%02d-%02dT%02d:%02d" % (int(y), int(mo), int(d), int(hh), int(mm))
+    try:
+        dt = datetime(int(y), int(mo), int(d), int(hh), int(mm))
+    except ValueError:
+        return None                      # 如 2026-14-99：格式像日期但日期非法
+    return dt.isoformat(timespec="minutes")
 
 
 def _is_blank(v):
@@ -178,6 +183,104 @@ def clean_scores(path, valid_activity_ids=None, valid_student_ids=None):
     clean_df = pd.DataFrame(clean, columns=SOURCE_COLS)
     issues_df = pd.DataFrame(issues, columns=ISSUE_COLS)
     return clean_df, issues_df
+
+
+SIGNUP_COLS = ["activity_id", "student_id", "name", "created_at"]
+
+
+def read_signup(path):
+    """读取报名导入表 xlsx（Sheet signup_import），统一按字符串返回。"""
+    import openpyxl
+    path = Path(path)
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    ws = wb["signup_import"] if "signup_import" in wb.sheetnames else wb[wb.sheetnames[0]]
+    it = ws.iter_rows(values_only=True)
+    header = [str(c).strip() if c is not None else "" for c in next(it)]
+    rows = []
+    for values in it:
+        rows.append({h: ("" if v is None else v) for h, v in zip(header, values)})
+    wb.close()
+    return rows
+
+
+def clean_signup(path, valid_activity_ids=None, valid_student_ids=None):
+    """清洗报名导入表 signup_import.xlsx（单元 3 第二个文件）。
+
+    与 clean_scores 同构：8 类问题逐类处理；created_at 用 normalize_datetime 规范化；
+    返回 (clean_df, issues_df)，clean_df 列为 SIGNUP_COLS，可直接入库。
+    """
+    path = Path(path)
+    source_name = path.name
+    raw = read_signup(path)
+    issues, records, drop_rows = [], [], set()
+    seen = {}
+
+    for i, row in enumerate(raw):
+        row_no = i + 2                       # 表头第 1 行
+        act_raw = row.get("activity_id", "")
+        sid_raw = row.get("student_id", "")
+        name_raw = row.get("name", "")
+        created_raw = row.get("created_at", "")
+        act = "" if _is_blank(act_raw) else str(act_raw).strip()
+        sid = normalize_student_id(sid_raw)
+        name = "" if _is_blank(name_raw) else str(name_raw).strip()
+
+        if not act:
+            _add_issue(issues, source_name, row_no, "activity_id", act_raw,
+                       "关键字段缺失", "未入库"); continue
+        if not sid:
+            _add_issue(issues, source_name, row_no, "student_id", sid_raw,
+                       "关键字段缺失", "未入库"); continue
+        if sid != str(sid_raw):
+            _add_issue(issues, source_name, row_no, "student_id", sid_raw,
+                       "格式不规范", "已修复")
+        created = normalize_datetime(created_raw) if not _is_blank(created_raw) else None
+        if not _is_blank(created_raw) and created is None:
+            _add_issue(issues, source_name, row_no, "created_at", created_raw,
+                       "非法值", "未入库"); continue
+        if not _is_blank(created_raw) and str(created_raw).strip() != created:
+            _add_issue(issues, source_name, row_no, "created_at", created_raw,
+                       "格式不规范", "已修复")
+        if _is_blank(name_raw):
+            _add_issue(issues, source_name, row_no, "name", name_raw,
+                       "非关键字段缺失", "入库-未评定")
+
+        # 非法值：活动编号须为正整数；学号须为 10 位数字（数字格式先于引用检查）
+        if not (act.isdigit() and int(act) > 0):
+            _add_issue(issues, source_name, row_no, "activity_id", act_raw,
+                       "非法值", "未入库"); continue
+        if not re.fullmatch(r"\d{10}", sid):
+            _add_issue(issues, source_name, row_no, "student_id", sid_raw,
+                       "非法值", "未入库"); continue
+
+        if valid_activity_ids is not None and act not in {str(x) for x in valid_activity_ids}:
+            _add_issue(issues, source_name, row_no, "activity_id", act,
+                       "引用不存在", "未入库"); continue
+        if valid_student_ids is not None and sid not in {str(x) for x in valid_student_ids}:
+            _add_issue(issues, source_name, row_no, "student_id", sid,
+                       "引用不存在", "未入库"); continue
+
+        rec = {"activity_id": act, "student_id": sid, "name": name, "created_at": created}
+        records.append((row_no, rec))
+        seen.setdefault((act, sid), []).append((row_no, rec))
+
+    for key, group in seen.items():
+        if len(group) < 2:
+            continue
+        first = group[0][1]
+        if all(r == first for _, r in group[1:]):
+            for row_no, rec in group[1:]:
+                drop_rows.add(row_no)
+                _add_issue(issues, source_name, row_no, "student_id", rec["student_id"],
+                           "完全重复", "未入库")
+        else:
+            for row_no, rec in group:
+                drop_rows.add(row_no)
+                _add_issue(issues, source_name, row_no, "name", rec["name"],
+                           "重复且矛盾", "未入库")
+
+    clean = [rec for row_no, rec in records if row_no not in drop_rows]
+    return pd.DataFrame(clean, columns=SIGNUP_COLS), pd.DataFrame(issues, columns=ISSUE_COLS)
 
 
 def count_unimported(issues_df):

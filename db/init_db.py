@@ -1,8 +1,8 @@
-"""建库并写入演示数据。可重复运行而不报错、不产生重复数据。
+"""建库并写入初始数据。可重复运行而不报错、不产生重复数据。
 
 用法：python db/init_db.py
-数据源：优先读取 data/raw/students.csv（教师下发名单），若不存在则用内置演示名单。
-生成文件：data/app.db
+数据源：优先读取 data/raw/ 下教师下发的 students/venues/users/activities.csv，
+        缺失的表回退到内置演示数据。生成文件：data/app.db
 """
 import csv
 import os
@@ -60,9 +60,41 @@ def load_students(conn):
     return conn.total_changes - before
 
 
+def load_csv_table(conn, name, table, columns, cast=None):
+    """从教师下发的 data/raw/<name>.csv 导入指定表，INSERT OR IGNORE 保证幂等。
+
+    返回导入的文件行数；文件不存在返回 0（由调用方决定是否回退演示数据）。
+    """
+    src = ROOT / "data" / "raw" / (name + ".csv")
+    if not src.exists():
+        return 0
+    cast = cast or {}
+    rows = []
+    with src.open(encoding="utf-8-sig") as f:
+        for r in csv.DictReader(f):
+            vals = []
+            for col in columns:
+                v = r.get(col, "")
+                if v == "":
+                    vals.append(None)            # 空字符串按 NULL 处理，避免违反外键
+                else:
+                    vals.append(cast[col](v) if col in cast else v)
+            rows.append(tuple(vals))
+    placeholders = ",".join("?" for _ in columns)
+    conn.executemany(
+        "INSERT OR IGNORE INTO %s (%s) VALUES (%s)" % (table, ",".join(columns), placeholders),
+        rows)
+    return len(rows)
+
+
 def seed_users(conn):
-    """写入演示用户；学生用户绑定到已有学号。幂等。"""
+    """写入用户；教师 CSV 优先，否则用内置演示用户。幂等。"""
     student_ids = [r[0] for r in conn.execute("SELECT student_id FROM students").fetchall()]
+    n = load_csv_table(conn, "users", "users",
+                       ["user_id", "username", "role", "student_id"],
+                       {"user_id": int})
+    if n:
+        return
     for i, (username, role) in enumerate(DEMO_USERS):
         sid = student_ids[i] if role == "student" and i < len(student_ids) else None
         conn.execute(
@@ -71,6 +103,15 @@ def seed_users(conn):
 
 
 def seed_activities(conn):
+    """写入活动；教师 CSV 优先，否则用内置演示活动。幂等。"""
+    acts_cols = ["activity_id", "title", "category", "organizer_id", "venue_id",
+                 "start_time", "end_time", "signup_deadline", "capacity",
+                 "status", "description"]
+    n = load_csv_table(conn, "activities", "activities", acts_cols,
+                       {"activity_id": int, "organizer_id": int, "venue_id": int,
+                        "capacity": int})
+    if n:
+        return
     """写入若干不同状态的演示活动，覆盖报名中、已结束等场景。幂等。"""
     org_ids = [r[0] for r in conn.execute(
         "SELECT user_id FROM users WHERE role='organizer'").fetchall()]
@@ -109,13 +150,19 @@ def main():
     try:
         conn.executescript(SCHEMA.read_text(encoding="utf-8"))
         n_stu = load_students(conn)
-        conn.executemany(
-            "INSERT OR IGNORE INTO venues (name, capacity) VALUES (?,?)", VENUES)
+        n_venue = load_csv_table(conn, "venues", "venues", ["venue_id", "name", "capacity"],
+                                 {"venue_id": int, "capacity": int})
+        if not n_venue:
+            conn.executemany(
+                "INSERT OR IGNORE INTO venues (name, capacity) VALUES (?,?)", VENUES)
         seed_users(conn)
         seed_activities(conn)
         conn.commit()
         print("数据库初始化完成：%s" % DB_PATH)
         print("新增学生记录：%d" % n_stu)
+        for t in ("students", "venues", "users", "activities"):
+            print("  %-10s %d 行" % (t, conn.execute(
+                "SELECT COUNT(*) FROM %s" % t).fetchone()[0]))
     finally:
         conn.close()
 

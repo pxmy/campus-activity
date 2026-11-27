@@ -1,0 +1,11 @@
+user_id,username,role,student_id
+1,admin,admin,
+2,org_zhang,organizer,
+3,org_li,organizer,
+4,org_wang,organizer,
+5,stu_0101,student,2023010101
+6,stu_0102,student,2023010102
+7,stu_0103,student,2023010103
+8,stu_0104,student,2023010104
+9,stu_0105,student,2023010105
+10,stu_0106,student,2023010106

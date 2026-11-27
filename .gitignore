@@ -1,5 +1,8 @@
 # 密钥（绝对不能入库）
 .env
+.env.*
+*.bak
+*.env.txt
 
 # 虚拟环境
 .venv/

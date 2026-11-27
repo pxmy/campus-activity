@@ -106,3 +106,103 @@ def test_no_silent_drop(tmp_path):
     p = write_csv(tmp_path, rows)
     clean, issues = clean_scores(p)
     assert len(rows) == len(clean) + count_unimported(issues)
+
+
+# ===== 单元 3 第二个文件 signup_import.xlsx 的清洗测试 =====
+import pytest
+from services.cleaning import clean_signup
+
+
+def _write_signup(tmp_path, rows):
+    """把内存中的行写成最小 xlsx，表头由 rows 的键决定。"""
+    import openpyxl
+    p = tmp_path / "signup_import.xlsx"
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "signup_import"
+    cols = ["activity_id", "student_id", "name", "created_at"]
+    ws.append(cols)
+    for r in rows:
+        ws.append([r.get(c, "") for c in cols])
+    wb.save(p)
+    return p
+
+
+def _ok(act, sid):
+    return {"activity_id": act, "student_id": sid, "name": "张三",
+            "created_at": "2026-09-20T09:00"}
+
+
+BASE_ACTS = {"1", "2"}
+BASE_STUS = {"2023010101", "2023010102", "2023010103"}
+
+
+def test_signup_normal(tmp_path):
+    clean, issues = clean_signup(_write_signup(tmp_path, [_ok(1, "2023010101")]),
+                                 BASE_ACTS, BASE_STUS)
+    assert len(clean) == 1 and issues.empty
+
+
+def test_signup_key_missing(tmp_path):
+    clean, issues = clean_signup(_write_signup(tmp_path, [
+        _ok("", "2023010101"), _ok(1, "")]), BASE_ACTS, BASE_STUS)
+    assert clean.empty
+    assert (issues["issue_type"] == "关键字段缺失").sum() == 2
+
+
+def test_signup_name_missing_kept(tmp_path):
+    r = _ok(1, "2023010101"); r["name"] = ""
+    clean, issues = clean_signup(_write_signup(tmp_path, [r]), BASE_ACTS, BASE_STUS)
+    assert len(clean) == 1
+    assert (issues["issue_type"] == "非关键字段缺失").sum() == 1
+
+
+def test_signup_format_fixed(tmp_path):
+    r = _ok(1, " 2023010101 ")
+    clean, issues = clean_signup(_write_signup(tmp_path, [r]), BASE_ACTS, BASE_STUS)
+    assert clean.iloc[0]["student_id"] == "2023010101"
+    assert (issues["issue_type"] == "格式不规范").sum() == 1
+
+
+def test_signup_illegal_activity_id(tmp_path):
+    rows = [_ok(-3, "2023010101"), _ok("ACT01", "2023010102"), _ok(0, "2023010103")]
+    clean, issues = clean_signup(_write_signup(tmp_path, rows), BASE_ACTS, BASE_STUS)
+    assert clean.empty
+    assert (issues["issue_type"] == "非法值").sum() == 3
+
+
+def test_signup_illegal_student_id(tmp_path):
+    rows = [_ok(1, "ABC1234567"), _ok(1, "202301")]  # 非数字 / 位数不足
+    clean, issues = clean_signup(_write_signup(tmp_path, rows), BASE_ACTS, BASE_STUS)
+    assert clean.empty
+    assert (issues["issue_type"] == "非法值").sum() == 2
+
+
+def test_signup_reference_missing(tmp_path):
+    clean, issues = clean_signup(_write_signup(tmp_path, [
+        _ok(999, "2023010101"), _ok(1, "2023999999")]), BASE_ACTS, BASE_STUS)
+    assert clean.empty
+    assert (issues["issue_type"] == "引用不存在").sum() == 2
+
+
+def test_signup_exact_duplicate(tmp_path):
+    clean, issues = clean_signup(_write_signup(tmp_path, [
+        _ok(1, "2023010101"), _ok(1, "2023010101")]), BASE_ACTS, BASE_STUS)
+    assert len(clean) == 1
+    assert (issues["issue_type"] == "完全重复").sum() == 1
+
+
+def test_signup_conflict_duplicate(tmp_path):
+    a = _ok(1, "2023010101"); b = _ok(1, "2023010101"); b["name"] = "李四"
+    clean, issues = clean_signup(_write_signup(tmp_path, [a, b]), BASE_ACTS, BASE_STUS)
+    assert clean.empty
+    assert (issues["issue_type"] == "重复且矛盾").sum() == 2
+
+
+def test_signup_reconciliation(tmp_path):
+    rows = [_ok(1, "2023010101"), _ok(1, "2023010101"),   # 1 入库 + 1 完全重复
+            _ok("", "2023010102"),                          # 关键字段缺失
+            _ok(999, "2023010103")]                         # 引用不存在
+    clean, issues = clean_signup(_write_signup(tmp_path, rows), BASE_ACTS, BASE_STUS)
+    from services.cleaning import count_unimported
+    assert len(rows) == len(clean) + count_unimported(issues)
