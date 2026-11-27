@@ -227,3 +227,29 @@ def test_model_can_decline_even_with_high_similarity(index, chunks):
     res = qa.answer("本科生毕业需要累计修满多少个实践学分？", index, chunks,
                     llm_chat_text=fake)
     assert res["answered"] is False and res["sources"] == []
+    assert res["refused_by"] == "model"  # 页面据此显示真实提示，不再误称程序拒答
+
+
+def test_no_title_only_chunks():
+    """标题不得单独成片段，否则命中标题却无正文会让模型误判资料不足。"""
+    from pathlib import Path
+    for path in Path("data/docs").glob("*.md"):
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        chunks = qa._split_text(text)
+        assert chunks, path.name
+        assert not any(c.startswith("#") and c.count("\n") == 0 for c in chunks), path.name
+
+
+def test_policy_question_hits_body_not_title(index, chunks):
+    """用户的真实问法：Top1 必须是含正文的片段，不能是纯标题。"""
+    hits = qa.search("实践学分认定的条件是什么？", index, chunks, k=3)
+    assert hits and hits[0]["score"] >= 0.12 and hits[0]["coverage"] >= 0.30
+    assert "修满 4 个实践学分" in hits[0]["text"]  # 正文在 Top1
+
+
+def test_threshold_refusal_marked(index, chunks):
+    def must_not_call(*a, **k):
+        raise AssertionError("门槛拒答时不应调用模型")
+    res = qa.answer("学校第二食堂晚上几点关门？", index, chunks,
+                    llm_chat_text=must_not_call)
+    assert res["answered"] is False and res["refused_by"] == "threshold"

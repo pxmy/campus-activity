@@ -164,4 +164,7 @@ with tab_qa:
                         st.write(src["text"])
             else:
                 st.info(res["text"])
-                st.caption("程序在调用模型前判定资料未覆盖，直接拒答，未生成内容。")
+                if res.get("refused_by") == "model":
+                    st.caption("程序检索到资料片段并调用了模型，模型判断片段不足以回答，未生成内容。")
+                else:
+                    st.caption("程序在调用模型前判定资料未覆盖，直接拒答，未生成内容。")

@@ -51,10 +51,28 @@ ANSWER_SYSTEM = (
 
 
 def _split_text(text):
-    """按空行分段，按 200—400 字切分过长的段落。"""
+    """按空行分段；标题行只作为紧随正文的前缀，不单独成片段；过长片段按 400 字切开。
+
+    标题若单独成片段，检索时“实践学分认定”这类问题会命中只有标题、没有正文的
+    片段，模型因看不到实际内容而误判资料不足。连续标题（章→节）全部并入其下
+    第一段正文，保证每个片段都含可读正文。
+    """
     blocks = [b.strip() for b in re.split(r"\n\s*\n", text) if b.strip()]
-    chunks = []
+    merged = []
+    pending_titles = []
     for b in blocks:
+        if re.match(r"^#{1,6}\s", b):
+            pending_titles.append(b)
+            continue
+        if pending_titles:
+            b = "\n".join(pending_titles) + "\n" + b
+            pending_titles = []
+        merged.append(b)
+    # 文末若有悬空标题（其下无正文），并入最后一个片段，避免章节信息丢失
+    if pending_titles and merged:
+        merged[-1] = "\n".join(pending_titles) + "\n" + merged[-1]
+    chunks = []
+    for b in merged:
         if len(b) <= 400:
             chunks.append(b)
         else:
@@ -113,7 +131,8 @@ def answer(question, index, chunks, llm_chat_text=None,
     hits = search(question, index, chunks, k=3)
     if (not hits or hits[0]["score"] < min_score
             or hits[0]["coverage"] < min_coverage):
-        return {"answered": False, "text": "现有资料中没有找到相关内容。", "sources": []}
+        return {"answered": False, "refused_by": "threshold",
+                "text": "现有资料中没有找到相关内容。", "sources": []}
     fn = llm_chat_text or chat_text
     labeled = "\n".join("[%d] %s（来源：%s / %s）" % (i + 1, h["text"], h["file"], h["section"])
                         for i, h in enumerate(hits))
@@ -125,7 +144,8 @@ def answer(question, index, chunks, llm_chat_text=None,
         raise ValueError("问答返回不是合法 JSON") from e
     text = data.get("text", "")
     if data.get("answered") is False:
-        return {"answered": False, "text": text, "sources": []}
+        return {"answered": False, "refused_by": "model",
+                "text": text or "现有资料中没有找到相关内容。", "sources": []}
     # 校验模型引用的编号必须都在本次提供范围内，且至少引用一个片段
     cited = {int(n) for n in re.findall(r"\[(\d+)\]", text)}
     if not cited:
@@ -134,4 +154,4 @@ def answer(question, index, chunks, llm_chat_text=None,
         raise ValueError("模型引用了本次未提供的片段编号")
     # 只把实际被引用的片段列为来源，避免页面显示未依据的片段
     sources = [h for i, h in enumerate(hits, 1) if i in cited]
-    return {"answered": True, "text": text, "sources": sources}
+    return {"answered": True, "refused_by": None, "text": text, "sources": sources}
