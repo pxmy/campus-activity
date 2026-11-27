@@ -9,6 +9,9 @@ ROLE_CN = {"student": "学生", "organizer": "组织者", "admin": "管理员"}
 STATUS_CN = {"draft": "草稿", "open": "报名中", "closed": "报名截止",
              "finished": "已结束", "cancelled": "已取消"}
 ATT_CN = {"present": "准时", "late": "迟到", "absent": "缺席"}
+# 界面选项用中文展示，提交时映射回英文码值存库（规则层只认英文）
+ATT_REVERSE = {"准时": "present", "迟到": "late", "缺席": "absent"}
+ATT_OPTIONS = ["未登记"] + list(ATT_CN.values())
 
 
 def list_venues():

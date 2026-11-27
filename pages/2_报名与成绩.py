@@ -1,9 +1,10 @@
 """页面 2：报名与成绩（学生报名/取消/查成绩；组织者登记到场与任务）。"""
 import streamlit as st
 
-from services.activities import (ATT_CN, STATUS_CN, activity_registrations,
-                                 do_cancel_registration, do_register, list_activities,
-                                 my_registrations, record_attendance)
+from services.activities import (ATT_CN, ATT_OPTIONS, ATT_REVERSE, STATUS_CN,
+                                 activity_registrations, do_cancel_registration,
+                                 do_register, list_activities, my_registrations,
+                                 record_attendance)
 from services.auth import current_user, require_role
 from services.rules import RuleError, score_level
 
@@ -65,17 +66,17 @@ elif role in ("organizer", "admin"):
         sc = r["practice_score"]
         with st.expander("%s %s ｜ 当前成绩：%s" % (
                 r["student_id"], r["name"], "未评定" if sc is None else sc)):
-            att = st.selectbox("到场情况", ["未登记", "present", "late", "absent"],
-                               index=["未登记", "present", "late", "absent"].index(
-                                   r["attendance"] or "未登记"),
-                               key="att_%d" % r["reg_id"])
+            att = st.selectbox(
+                "到场情况", ATT_OPTIONS,
+                index=ATT_OPTIONS.index(ATT_CN.get(r["attendance"], "未登记")),
+                key="att_%d" % r["reg_id"])
             task = st.number_input("任务完成度（0-100，留空为未评定）", min_value=0, max_value=100,
                                    value=r["task_score"] if r["task_score"] is not None else 0,
                                    key="task_%d" % r["reg_id"])
             if st.button("保存登记", key="save_%d" % r["reg_id"]):
                 try:
                     score, level = record_attendance(
-                        r["reg_id"], None if att == "未登记" else att, int(task))
+                        r["reg_id"], ATT_REVERSE.get(att), int(task))
                     st.success("已保存，成绩：%s（%s）" % (
                         "未评定" if score is None else score, level))
                     st.rerun()
